@@ -5,7 +5,40 @@ This repo walks you through the NVIDIA GPU autoscaling with HPA on custom GPU me
 ![](images/amazon-eks-gpu-scale.png)
 
 # Prerequisities
-Amazon EKS cluster with GPU nodes(P2 or P3)
+Prepare an Amazon EKS cluster with GPU nodes(P2 or P3). You may create the cluster with `eksctl` or [aws-samples/amazon-eks-refarch-cloudformation](https://github.com/aws-samples/amazon-eks-refarch-cloudformation).
+
+If you prefer to create the cluster with [aws-samples/amazon-eks-refarch-cloudformation](https://github.com/aws-samples/amazon-eks-refarch-cloudformation), create a `custom.mk` in the local git repository like this
+
+```
+EKS_ADMIN_ROLE ?= arn:aws:iam::903779448426:role/AmazonEKSAdminRole
+SSH_KEY_NAME ?= 'aws-pahud'
+NodeVolumeSize ?= 30
+EnableNodeDrainer ?= no
+InstanceTypesOverride ?= 'p2.xlarge,p2.8xlarge,p3.2xlarge'
+OnDemandBaseCapacity ?= 0
+NodeAutoScalingGroupMinSize ?= 0
+NodeAutoScalingGroupDesiredSize ?= 1
+NodeAutoScalingGroupMaxSize ?= 10
+CLUSTER_STACK_NAME ?= eksdemo-gpu
+REGION ?= ap-northeast-1
+VPC_ID ?= vpc-e549a281
+SUBNET1 ?= subnet-05b643f57a6997deb
+SUBNET2 ?= subnet-09e79eb1dec82b7e2
+SUBNET3 ?= subnet-0c365d97cbc75ceec
+NodeImageId ?= ami-04cf69bbd6c0fae0b
+```
+
+
+
+```bash
+ExtraNodeLabels=NVIDIAGPU=1 make creat-eks-cluster
+```
+
+
+
+
+
+
 
 
 # Label your GPU nodes
@@ -31,17 +64,43 @@ follow [this guide](https://github.com/pahud/amazon-eks-workshop/blob/master/00-
 
 # Install Prometheus and GPU Node Exporter
 
-follow [this guide](https://nvidia.github.io/gpu-monitoring-tools/) to install `prometheus-operator`, `kube-prometheus` and `GPU metrics dashboard`.
+Install `prometheus-operator`, `kube-prometheus` and `GPU metrics dashboard` in the `default` namespace
+
+#### Identify and label GPU nodes
+
+```bash
+# Label GPU nodes to run our node-exporter only on GPU nodes.
+# Note that a nodeSelector label is defined in node-exporter to control deploying it on GPU nodes only. 
+kubectl label nodes <gpu-node-name> hardware-type=NVIDIAGPU
+```
+
+#### Install helm charts
+
+```bash
+# Install helm https://docs.helm.sh/using_helm/ then run:
+helm repo add gpu-helm-charts https://nvidia.github.io/gpu-monitoring-tools/helm-charts
+helm repo update
+helm install gpu-helm-charts/prometheus-operator --name prometheus-operator
+helm install gpu-helm-charts/kube-prometheus --name kube-prometheus
+```
+
+#### GPU metrics Dashboard
+
+```bash
+# Forward the port for Grafana.
+kubectl -n default port-forward $(kubectl get pods -n default -lapp=kube-prometheus-grafana -ojsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}') 3000 &
+# Open in browser http://localhost:3000 and go to Nodes Dashboard
+```
 
 
 SSH into the GPU node validate the `dcgm_*` metrics.
 
 ![](images/01.png)
 
-# Install the Prometheus Adapter to generic custom metrics
+# Install the Prometheus Adapter to generate custom metrics
 
 ```bash
-$ helm install --name prometheus-adapter --set rbac.create=true,prometheus.url=http://kube-prometheus-prometheus.monitoring.svc.cluster.local,prometheus.port=9090 stable/prometheus-adapter
+$ helm install --name prometheus-adapter --set rbac.create=true,prometheus.url=http://kube-prometheus-prometheus.default.svc.cluster.local,prometheus.port=9090 stable/prometheus-adapter
 ```
 
 Wait a few seconds and you should be able to get custom metrics from the API
