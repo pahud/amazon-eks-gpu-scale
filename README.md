@@ -3,7 +3,7 @@
 This repo walks you through the NVIDIA GPU autoscaling with HPA on custom GPU metrics as well as CA(cluster autoscaler) on Amazon EKS.
 
 # Prerequisities
-1. Amazon EKS cluster with GPU nodes(P2 or P3)
+Amazon EKS cluster with GPU nodes(P2 or P3)
 
 
 # Label your GPU nodes
@@ -34,7 +34,7 @@ follow [this guide](https://nvidia.github.io/gpu-monitoring-tools/) to install `
 
 SSH into the GPU node validate the `dcgm_*` metrics.
 
-IMAGE HERE
+![](images/01.png)
 
 # Install the Prometheus Adapter to generic custom metrics
 
@@ -167,10 +167,10 @@ Events:
   Type    Reason             Age    From                       Message
   ----    ------             ----   ----                       -------
   Normal  SuccessfulRescale  2m33s  horizontal-pod-autoscaler  New size: 2; reason: Service metric dcgm_gpu_utilization above target
-  ```
-  
+```
+
   The HPA is trying to scale out to `2` but the 2nd replica can't be deployed because of insufficent GPU resources.
-  
+
 
 # Cluster Autoscaler
 
