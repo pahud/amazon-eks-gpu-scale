@@ -1,6 +1,8 @@
-# amazon-eks-gpu-scale
+# Amazon EKS GPU Scale
 
 This repo walks you through the NVIDIA GPU autoscaling with HPA on custom GPU metrics as well as CA(cluster autoscaler) on Amazon EKS.
+
+![](images/amazon-eks-gpu-scale.png)
 
 # Prerequisities
 Amazon EKS cluster with GPU nodes(P2 or P3)
