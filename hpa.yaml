@@ -1,0 +1,70 @@
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-gpu
+  namespace: default
+spec:
+  scaleTargetRef:
+    # point the HPA at the sample application
+    # you created above
+    apiVersion: apps/v1beta1
+    #apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: gputest
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  # use a "Pods" metric, which takes the average of the
+  # given metric across all pods controlled by the autoscaling target
+    # - type: Object
+    #   object:
+    #     metric:
+    #       name: dcgm_gpu_utilization
+    #     # describedObject:
+    #     #   apiVersion: networking.k8s.io/v1beta1
+    #     #   kind: Ingress
+    #     #   name: main-route
+    #     target:
+    #       kind: Value
+    #       value: 80
+  - type: Object
+    object:
+      target:
+        kind: Service
+        name: kube-prometheus-exporter-node
+      metricName: dcgm_gpu_utilization
+      targetValue: 80
+  # - type: Pods
+  #   pods:
+  #     # use the metric that you used above: pods/http_requests
+  #     metricName: dcgm_gpu_utilization
+  #     targetAverageValue: 80
+  # - 
+  #   type: External
+  #   external:
+  #     metric:
+  #       name: dcgm_gpu_utilization
+  #       selector: 
+  #         name: "pods/dcgm_gpu_utilization"
+  #     target:
+  #       type: AverageValue
+  #       averageValue: 90
+
+  # - type: Pods
+  #   pods:
+  #     metric:
+  #       name: dcgm_gpu_utilization
+  #     target:
+  #       type: AverageValue
+  #       averageValue: 80
+        
+  # - type: External
+  # external:
+  #   metric:
+  #     name: dcgm_gpu_utilization
+  #     selector: "app=dcgm_gpu_utilization"
+  #   target:
+  #     type: AverageValue
+  #     averageValue: 30
+      
